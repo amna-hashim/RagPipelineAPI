@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Upload Document</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px; }
+  h1 { font-size: 1.4rem; }
+  input[type="file"] { display: block; margin: 20px 0; }
+  button {
+    padding: 10px 24px; background: #2563eb; color: white; border: none;
+    border-radius: 6px; font-size: 1rem; cursor: pointer;
+  }
+  button:disabled { background: #93c5fd; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: #1d4ed8; }
+  #status { margin-top: 20px; padding: 12px; border-radius: 6px; display: none; }
+  #status.success { background: #dcfce7; color: #166534; display: block; }
+  #status.error { background: #fee2e2; color: #991b1b; display: block; }
+  #status.loading { background: #f1f5f9; color: #334155; display: block; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+  <p><a href="index.html">&larr; Back</a></p>
+  <h1>Upload a Document</h1>
+
+  <input type="file" id="fileInput" accept=".pdf" />
+  <button id="saveButton">Save</button>
+
+  <div id="status"></div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const saveButton = document.getElementById('saveButton');
+    const status = document.getElementById('status');
+
+    saveButton.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        setStatus('error', 'Please choose a PDF file first.');
+        return;
+      }
+
+      saveButton.disabled = true;
+      setStatus('loading', 'Uploading and processing... this can take a little while for larger documents.');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+          const response = await fetch('/api/document/ingest', { method: 'POST', body: formData });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || `Request failed (${response.status})`);
+        }
+
+        const result = await response.json();
+        setStatus('success',
+          `Saved "${result.fileName}" — ${result.chunksCreated} chunk(s) created.`);
+      } catch (err) {
+        setStatus('error', `Failed: ${err.message}`);
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    function setStatus(type, message) {
+      status.className = type;
+      status.textContent = message;
+    }
+  </script>
+</body>
+</html>

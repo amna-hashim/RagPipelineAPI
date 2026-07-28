@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ask a Question</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; }
+  h1 { font-size: 1.4rem; }
+  textarea {
+    width: 100%; box-sizing: border-box; padding: 10px; font-size: 1rem;
+    border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; min-height: 70px;
+  }
+  button {
+    margin-top: 12px; padding: 10px 24px; background: #2563eb; color: white; border: none;
+    border-radius: 6px; font-size: 1rem; cursor: pointer;
+  }
+  button:disabled { background: #93c5fd; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: #1d4ed8; }
+  #answerBox { margin-top: 24px; display: none; }
+  #answerText {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px; white-space: pre-wrap; line-height: 1.5;
+  }
+  #sources { margin-top: 16px; }
+  #sources h3 { font-size: 0.9rem; color: #64748b; margin-bottom: 8px; }
+  .source {
+    font-size: 0.85rem; color: #475569; padding: 8px 12px; background: #f1f5f9;
+    border-radius: 6px; margin-bottom: 6px;
+  }
+  .source .type {
+    display: inline-block; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px;
+    background: #dbeafe; color: #1e40af; margin-right: 6px;
+  }
+  #error { margin-top: 20px; padding: 12px; border-radius: 6px; background: #fee2e2; color: #991b1b; display: none; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+  <p><a href="index.html">&larr; Back</a></p>
+  <h1>Ask a Question</h1>
+
+  <textarea id="questionInput" placeholder="e.g. What was the total revenue in Q3?"></textarea>
+  <br />
+  <button id="askButton">Ask</button>
+
+  <div id="error"></div>
+
+  <div id="answerBox">
+    <div id="answerText"></div>
+    <div id="sources">
+      <h3>Sources</h3>
+      <div id="sourceList"></div>
+    </div>
+  </div>
+
+  <script>
+    const questionInput = document.getElementById('questionInput');
+    const askButton = document.getElementById('askButton');
+    const answerBox = document.getElementById('answerBox');
+    const answerText = document.getElementById('answerText');
+    const sourceList = document.getElementById('sourceList');
+    const errorBox = document.getElementById('error');
+
+    askButton.addEventListener('click', ask);
+    questionInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); }
+    });
+
+    async function ask() {
+      const question = questionInput.value.trim();
+      if (!question) return;
+
+      askButton.disabled = true;
+      errorBox.style.display = 'none';
+      answerBox.style.display = 'none';
+      askButton.textContent = 'Thinking...';
+
+      try {
+
+          const response = await fetch('/api/document/query', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: question })
+          });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || `Request failed (${response.status})`);
+        }
+
+        const result = await response.json();
+        renderAnswer(result);
+      } catch (err) {
+        errorBox.textContent = `Failed: ${err.message}`;
+        errorBox.style.display = 'block';
+      } finally {
+        askButton.disabled = false;
+        askButton.textContent = 'Ask';
+      }
+    }
+
+    function renderAnswer(result) {
+      answerText.textContent = result.answer;
+      sourceList.innerHTML = '';
+
+      (result.sources || []).forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'source';
+        div.innerHTML = `${s.fileName} — page ${s.pageNumber} ` +
+                         `(relevance ${(s.relevance * 100).toFixed(0)}%)`;
+        sourceList.appendChild(div);
+      });
+
+      answerBox.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
