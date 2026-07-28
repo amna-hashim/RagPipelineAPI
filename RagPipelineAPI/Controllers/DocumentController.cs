@@ -1,4 +1,4 @@
-﻿/*using Azure.Core;
+﻿using Azure.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RagPipeline;
@@ -61,4 +61,3 @@ namespace SimpleChatbot.Controllers
         }
     }
 }
-*/
