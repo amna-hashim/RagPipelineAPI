@@ -18,6 +18,7 @@ public class RagDbContext : DbContext
 
         modelBuilder.Entity<RagSourceDocument>(e =>
         {
+            e.ToTable("RagSourceDocuments");
             e.HasKey(x => x.Id);
             e.Property(x => x.FileName).HasMaxLength(400).IsRequired();
             e.Property(x => x.Title).HasMaxLength(400);
@@ -25,6 +26,7 @@ public class RagDbContext : DbContext
 
         modelBuilder.Entity<RagDocumentChunk>(e =>
         {
+            e.ToTable("RagDocumentChunks");
             e.HasKey(x => x.Id);
             e.Property(x => x.Content).HasColumnType("nvarchar(max)").IsRequired();
             e.Ignore(m => m.Embedding); // handled outside EF
